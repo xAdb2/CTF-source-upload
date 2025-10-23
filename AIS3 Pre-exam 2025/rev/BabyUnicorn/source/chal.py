@@ -5,32 +5,28 @@ code = b"\x83\xFE\x20\x0F\x84\xA3\x03\x00\x00\x83\xFE\x0D\x0F\x84\x13\x04\x00\x0
 
 ADDRESS_CODE = 0x1000000
 ADDRESS_STACK = 0x2000000
-STACK_SIZE = 0x4000 
-CODE_SIZE = 0x10000
+STACK_SIZE = 0x4000  # 16KB for stack
+CODE_SIZE = 0x10000   # 4KB for code
 FLAG_ADDR = ADDRESS_STACK + STACK_SIZE - 0x100 + 0x20
 FLAG_LEN = 47
 
-def parse_modrm(modrm):
-    mod = (modrm >> 6) & 0b11
-    reg = (modrm >> 3) & 0b111
-    rm  = modrm & 0b111
-    return mod, reg, rm
-
-def parse_sib(sib):
-    scale = (sib >> 6) & 0b11
-    index = (sib >> 3) & 0b111
-    base  = sib & 0b111
-    return scale, index, base
-
+path = []
+def hook_code(uc, address, size, user_data):
+    instruction = uc.mem_read(address, size)
+    if instruction[0] == 0xCD:
+        if instruction[1] == 0x6:
+            EIP = ADDRESS_CODE
+            ESI = 0x6
+            uc.reg_write(UC_X86_REG_EIP, EIP)
+            uc.reg_write(UC_X86_REG_ESI, ESI)   
+            
 def hook_code1(uc, address, size, user_data):
     EIP = ADDRESS_CODE
     ESI = 0x6
     uc.reg_write(UC_X86_REG_EIP, EIP)
     uc.reg_write(UC_X86_REG_ESI, ESI)
-
 def hook_code2(uc, address, size, user_data):
     flag = uc.mem_read(FLAG_ADDR, FLAG_LEN)
-    print(flag)
     GOAL =  [0x5a, 0x60, 0x61, 0xf, 0x8, 0x29, 0x42, 0x32, 0x25, 0x23, 0x42, 0x68, 0x4b, 0x41, 0x63, 0x55, 0x37, 0x43, 0x6a, 0x50, 0x40, 0x6f, 0x2e, 0x66, 0x49, 0x7f, 0x9, 0x66, 0x79, 0x7c, 0x37, 0x18, 0x5d, 0x35, 0x46, 0x41, 0x37, 0xf, 0x19, 0x1c, 0x30, 0x79, 0x29, 0x69, 0xa, 0x46, 0x3b]
     check = 0
     for i in range(FLAG_LEN):
@@ -39,7 +35,6 @@ def hook_code2(uc, address, size, user_data):
             check = 1
     if check == 0:
         print("flag is correct")
-
 def hook_code3(uc, address, size, user_data):
     uc.reg_write(UC_X86_REG_EIP, address + 2)
     
@@ -65,13 +60,13 @@ def hook_insn(uc, user_data):
 def main():
     print("Unicorn CHAL By:ShallowFeather")
     
-    mu = Uc(UC_ARCH_X86, UC_MODE_32)      
-    mu.mem_map(ADDRESS_CODE, CODE_SIZE)   
-    mu.mem_map(ADDRESS_STACK, STACK_SIZE) 
+    mu = Uc(UC_ARCH_X86, UC_MODE_32)
+    mu.mem_map(ADDRESS_CODE, CODE_SIZE)
+    mu.mem_map(ADDRESS_STACK, STACK_SIZE)
 
     mu.reg_write(UC_X86_REG_ESP, ADDRESS_STACK + STACK_SIZE - 0x100)
     
-
+    
     mu.mem_write(ADDRESS_CODE, code)
 
 
@@ -81,6 +76,7 @@ def main():
     mu.mem_write(ADDRESS_CODE, code)
     mu.reg_write(UC_X86_REG_ESI, 0x2)
 
+    mu.hook_add(UC_HOOK_CODE, hook_code)
     mu.hook_add(UC_HOOK_INSN, hook_insn, None, 1, 0, UC_X86_INS_CPUID)
     mu.hook_add(UC_HOOK_CODE, hook_code1, None, 0x10010d0, 0x10010d0 + 1)
     mu.hook_add(UC_HOOK_CODE, hook_code2, None, 0x10003fc, 0x10003fc + 1)
