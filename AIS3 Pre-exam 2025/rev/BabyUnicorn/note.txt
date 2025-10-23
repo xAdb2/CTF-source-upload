@@ -1,0 +1,75 @@
+seg000:000001E6 83 FE 02                                cmp     esi, 2
+seg000:000001E9 0F 84 09 12 00 00                       jz      loc_13F8
+
+loc_13F8:
+seg000:000013F8 8D 4C 24 F8                             lea     ecx, [esp-8]
+seg000:000013FC BE 28 00 00 00                          mov     esi, 28h ; '('
+seg000:00001401 BF 2F 00 00 00                          mov     edi, 2Fh ; '/'
+
+	ecx = 0x2003F00 - 0x8 = 0x2003EF8
+	esi = 0x28
+	edi = 0x2F
+
+loc_1406:
+seg000:00001406 89 F0                                   mov     eax, esi
+seg000:00001408 99                                      cdq
+
+	eax = 0x28
+	edx = 0x00000000
+
+seg000:00001409 F7 FF                                   idiv    edi
+
+	eax = 0x0
+	edx = 0x28
+
+seg000:0000140B 0F B6 44 14 20                          movzx   eax, byte ptr [esp+edx+20h] # 0x2003F00 + 0x40 + 0x20 = 0x2003F60
+
+	eax = flag[edx]
+
+seg000:00001410 30 04 31                                xor     [ecx+esi], al # 0x2003EF8 + 0x28 = 0x02003F20
+
+	flag[esi] = flag[esi] ^ al
+
+seg000:00001413 83 C6 01                                add     esi, 1
+seg000:00001416 83 FE 51                                cmp     esi, 51h ; 'Q' # flag 長度是 0x51
+seg000:00001419 75 EB                                   jnz     short loc_1406 # 長度不到就跳回去
+
+	esi = esi + 1
+	esi = 0x29 # flag[1]
+
+seg000:0000141B CD 61                                   int     61h             
+seg000:0000141D BE 27 00 00 00                          mov     esi, 27h ;
+seg000:00001422 E9 C6 EF FF FF                          jmp     loc_3ED
+
+	esi = 0x27
+
+loc_3ED:
+seg000:000003ED 89 74 24 04                             mov     [esp+4], esi
+seg000:000003F1 8D 74 24 20                             lea     esi, [esp+20h]
+seg000:000003F5 C7 04 24 68 70 40 00                    mov     dword ptr [esp], 407068h
+
+	0x2003F04 = 0x27
+	lea = 0x2003F20
+	esp = 0x407068
+
+seg000:00000401                         loc_401:                                ; CODE XREF: sub_121A-E01↓j
+seg000:00000401 0F BE 06                                movsx   eax, byte ptr [esi]
+
+	eax = FFFF
+
+
+
+
+seg000:00000404 C7 04 24 6C 70 40 00                    mov     dword ptr [esp+0], 40706Ch
+seg000:0000040B 83 C6 01                                add     esi, 1
+seg000:0000040E 89 44 24 04                             mov     [esp+arg_0], eax
+seg000:00000412 E8 CF F9 FF FF                          call    near ptr 0FFFFFDE6h
+seg000:00000417 39 F3                                   cmp     ebx, esi
+seg000:00000419 75 E6                                   jnz     short loc_401
+seg000:0000041B 8D 65 F4                                lea     esp, [ebp-0Ch]
+seg000:0000041E 31 C0                                   xor     eax, eax
+seg000:00000420 5B                                      pop     ebx
+seg000:00000421 5E                                      pop     esi
+seg000:00000422 5F                                      pop     edi
+seg000:00000423 5D                                      pop     ebp
+seg000:00000424 C3                                      retn

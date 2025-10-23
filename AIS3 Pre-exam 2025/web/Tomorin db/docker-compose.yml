@@ -1,0 +1,8 @@
+services:
+  web-tomorin-db: 
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: web-tomorin-db
+    ports:
+      - "30000:30000"
